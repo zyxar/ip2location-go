@@ -1,4 +1,4 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/ip2location/ip2location-go)](https://goreportcard.com/report/github.com/ip2location/ip2location-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/zyxar/ip2location-go)](https://goreportcard.com/report/github.com/zyxar/ip2location-go)
 
 
 IP2Location Go Package
@@ -12,8 +12,8 @@ This package can be used in many types of projects such as:
  - analyze your web server logs to determine the countries of your visitors
  - credit card fraud detection
  - software export controls
- - display native language and currency 
- - prevent password sharing and abuse of service 
+ - display native language and currency
+ - prevent password sharing and abuse of service
  - geotargeting in advertisement
 
 The database will be updated in monthly basis for the greater accuracy. Free LITE databases are available at https://lite.ip2location.com/ upon registration.
@@ -25,7 +25,7 @@ Installation
 =======
 
 ```
-go get github.com/ip2location/ip2location-go
+go get github.com/zyxar/ip2location-go
 ```
 
 Example
@@ -36,38 +36,33 @@ package main
 
 import (
 	"fmt"
-	"github.com/ip2location/ip2location-go"
+	"os"
+	"github.com/zyxar/ip2location-go"
 )
 
 func main() {
-	ip2location.Open("./IPV6-COUNTRY-REGION-CITY-LATITUDE-LONGITUDE-ZIPCODE-TIMEZONE-ISP-DOMAIN-NETSPEED-AREACODE-WEATHER-MOBILE-ELEVATION-USAGETYPE.BIN")
-	ip := "8.8.8.8"
-	
-	results := ip2location.Get_all(ip)
-	
-	fmt.Printf("country_short: %s\n", results.Country_short)
-	fmt.Printf("country_long: %s\n", results.Country_long)
-	fmt.Printf("region: %s\n", results.Region)
-	fmt.Printf("city: %s\n", results.City)
-	fmt.Printf("isp: %s\n", results.Isp)
-	fmt.Printf("latitude: %f\n", results.Latitude)
-	fmt.Printf("longitude: %f\n", results.Longitude)
-	fmt.Printf("domain: %s\n", results.Domain)
-	fmt.Printf("zipcode: %s\n", results.Zipcode)
-	fmt.Printf("timezone: %s\n", results.Timezone)
-	fmt.Printf("netspeed: %s\n", results.Netspeed)
-	fmt.Printf("iddcode: %s\n", results.Iddcode)
-	fmt.Printf("areacode: %s\n", results.Areacode)
-	fmt.Printf("weatherstationcode: %s\n", results.Weatherstationcode)
-	fmt.Printf("weatherstationname: %s\n", results.Weatherstationname)
-	fmt.Printf("mcc: %s\n", results.Mcc)
-	fmt.Printf("mnc: %s\n", results.Mnc)
-	fmt.Printf("mobilebrand: %s\n", results.Mobilebrand)
-	fmt.Printf("elevation: %f\n", results.Elevation)
-	fmt.Printf("usagetype: %s\n", results.Usagetype)
-	fmt.Printf("api version: %s\n", ip2location.Api_version())
-	
-	ip2location.Close()
+	db, err := ip2location.NewDB("./IPV6-COUNTRY-REGION-CITY-LATITUDE-LONGITUDE-ZIPCODE-TIMEZONE-ISP-DOMAIN-NETSPEED-AREACODE-WEATHER-MOBILE-ELEVATION-USAGETYPE.BIN")
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Eixt(1)
+	}
+	defer db.Close()
+
+	fmt.Printf("api version: %s\n", ip2location.APIVersion())
+
+	record, err := ip2location.GetAll("8.8.8.8")
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	fmt.Printf("country_short: %s\n", record.CountryShort)
+	fmt.Printf("country_long: %s\n", record.CountryLong)
+	fmt.Printf("region: %s\n", record.Region)
+	fmt.Printf("city: %s\n", record.City)
+	fmt.Printf("isp: %s\n", record.ISP)
+	fmt.Printf("latitude: %f\n", record.Latitude)
+	fmt.Printf("longitude: %f\n", record.Longitude)
 }
 ```
 
