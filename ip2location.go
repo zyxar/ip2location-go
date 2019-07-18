@@ -65,32 +65,55 @@ var (
 )
 
 const (
-	apiVersion string = "8.0.3"
+	version string = "1.0.2"
 )
 
 const (
-	countryshort uint32 = 1 << iota
-	countrylong
-	region
-	city
-	isp
-	latitude
-	longitude
-	domain
-	zipcode
-	timezone
-	netspeed
-	iddcode
-	areacode
-	weatherstationcode
-	weatherstationname
-	mcc
-	mnc
-	mobilebrand
-	elevation
-	usagetype
+	ModeCountryShort uint32 = 1 << iota
+	ModeCountryLong
+	ModeRegion
+	ModeCity
+	ModeISP
+	ModeLatitude
+	ModeLongitude
+	ModeDomain
+	ModeZipCode
+	ModeTimeZone
+	ModeNetSpeed
+	ModeIddCode
+	ModeAreaCode
+	ModeWeatherStationCode
+	ModeWeatherStationName
+	ModeMobileCountryCode
+	ModeMobileNetworkCode
+	ModeMobileBrand
+	ModeElevation
+	ModeUsageType
 
-	all uint32 = countryshort | countrylong | region | city | isp | latitude | longitude | domain | zipcode | timezone | netspeed | iddcode | areacode | weatherstationcode | weatherstationname | mcc | mnc | mobilebrand | elevation | usagetype
+	ModeDB1  = ModeCountryShort | ModeCountryLong                                         //ip country
+	ModeDB2  = ModeDB1 | ModeISP                                                          //ip country isp
+	ModeDB3  = ModeDB1 | ModeRegion | ModeCity                                            //ip country region city
+	ModeDB4  = ModeDB3 | ModeISP                                                          //ip country region city isp
+	ModeDB5  = ModeDB3 | ModeLatitude | ModeLongitude                                     //ip country region city latitude longitude
+	ModeDB6  = ModeDB5 | ModeISP                                                          //ip country region city latitude longitude isp
+	ModeDB7  = ModeDB4 | ModeDomain                                                       //ip country region city isp domain
+	ModeDB8  = ModeDB6 | ModeDomain                                                       //ip country region city latitude longitude isp domain
+	ModeDB9  = ModeDB5 | ModeZipCode                                                      //ip country region city latitude longitude zipcode
+	ModeDB10 = ModeDB8 | ModeZipCode                                                      //ip country region city latitude longitude zipcode isp domain
+	ModeDB11 = ModeDB9 | ModeTimeZone                                                     //ip country region city latitude longitude zipcode timezone
+	ModeDB12 = ModeDB10 | ModeTimeZone                                                    //ip country region city latitude longitude zipcode timezone isp domain
+	ModeDB13 = ModeDB5 | ModeTimeZone | ModeNetSpeed                                      //ip country region city latitude longitude timezone netspeed
+	ModeDB14 = ModeDB12 | ModeNetSpeed                                                    //ip country region city latitude longitude zipcode timezone isp domain netspeed
+	ModeDB15 = ModeDB11 | ModeAreaCode | ModeIddCode                                      //ip country region city latitude longitude zipcode timezone areacode
+	ModeDB16 = ModeDB14 | ModeAreaCode | ModeIddCode                                      //ip country region city latitude longitude zipcode timezone isp domain netspeed areacode
+	ModeDB17 = ModeDB13 | ModeWeatherStationCode | ModeWeatherStationName                 //ip country region city latitude longitude timezone netspeed weather
+	ModeDB18 = ModeDB16 | ModeWeatherStationCode | ModeWeatherStationName                 //ip country region city latitude longitude zipcode timezone isp domain netspeed areacode weather
+	ModeDB19 = ModeDB8 | ModeMobileBrand | ModeMobileCountryCode | ModeMobileNetworkCode  //ip country region city latitude longitude isp domain mobile
+	ModeDB20 = ModeDB18 | ModeMobileBrand | ModeMobileCountryCode | ModeMobileNetworkCode //ip country region city latitude longitude zipcode timezone isp domain netspeed areacode weather mobile
+	ModeDB21 = ModeDB15 | ModeElevation                                                   //ip country region city latitude longitude zipcode timezone areacode elevation
+	ModeDB22 = ModeDB20 | ModeElevation                                                   //ip country region city latitude longitude zipcode timezone isp domain netspeed areacode weather mobile elevation
+	ModeDB23 = ModeDB19 | ModeUsageType                                                   //ip country region city latitude longitude isp domain mobile usagetype
+	ModeDB24 = ModeDB22 | ModeUsageType                                                   //ip country region city latitude longitude zipcode timezone isp domain netspeed areacode weather mobile elevation usagetype
 )
 
 type DB struct {
@@ -258,7 +281,7 @@ func init() {
 	maxIPV6Range.SetString("340282366920938463463374607431768211455", 10)
 }
 
-// initialize the component with the database path
+// NewDB initializes db with the database path
 func NewDB(dbpath string) (*DB, error) {
 	f, err := os.Open(dbpath)
 	if err != nil {
@@ -396,79 +419,85 @@ func NewDB(dbpath string) (*DB, error) {
 	return db, nil
 }
 
-// get api version
-func APIVersion() string {
-	return apiVersion
-}
+// APIVersion returns api version
+func APIVersion() string { return version }
 
+// Close closes db
 func (db *DB) Close() error { return db.f.Close() }
 
-// get all fields
-func (db *DB) GetAll(ip string) (*Record, error) { return db.query(ip, all) }
+// Get return fields selected by `mod`
+func (db *DB) Get(ip string, mod uint32) (*Record, error) { return db.query(ip, mod) }
 
-// get country code
-func (db *DB) GetCountryShort(ip string) (*Record, error) { return db.query(ip, countryshort) }
+// GetAll returns all fields
+func (db *DB) GetAll(ip string) (*Record, error) { return db.query(ip, ModeDB24) }
 
-// get country name
-func (db *DB) GetCountryLong(ip string) (*Record, error) { return db.query(ip, countrylong) }
+// GetCountryShort returns country code
+func (db *DB) GetCountryShort(ip string) (*Record, error) { return db.query(ip, ModeCountryShort) }
 
-// get region
-func (db *DB) GetRegion(ip string) (*Record, error) { return db.query(ip, region) }
+// GetCountryLong returns country name
+func (db *DB) GetCountryLong(ip string) (*Record, error) { return db.query(ip, ModeCountryLong) }
 
-// get city
-func (db *DB) GetCity(ip string) (*Record, error) { return db.query(ip, city) }
+// GetRegion returns region
+func (db *DB) GetRegion(ip string) (*Record, error) { return db.query(ip, ModeRegion) }
 
-// get isp
-func (db *DB) GetIsp(ip string) (*Record, error) { return db.query(ip, isp) }
+// GetCity returns city
+func (db *DB) GetCity(ip string) (*Record, error) { return db.query(ip, ModeCity) }
 
-// get latitude
-func (db *DB) GetLatitude(ip string) (*Record, error) { return db.query(ip, latitude) }
+// GetIsp returns isp
+func (db *DB) GetIsp(ip string) (*Record, error) { return db.query(ip, ModeISP) }
 
-// get longitude
-func (db *DB) GetLongitude(ip string) (*Record, error) { return db.query(ip, longitude) }
+// GetLatitude returns latitude
+func (db *DB) GetLatitude(ip string) (*Record, error) { return db.query(ip, ModeLatitude) }
 
-// get domain
-func (db *DB) GetDomain(ip string) (*Record, error) { return db.query(ip, domain) }
+// GetLongitude returns longitude
+func (db *DB) GetLongitude(ip string) (*Record, error) { return db.query(ip, ModeLongitude) }
 
-// get zip code
-func (db *DB) GetZipcode(ip string) (*Record, error) { return db.query(ip, zipcode) }
+// GetDomain returns domain
+func (db *DB) GetDomain(ip string) (*Record, error) { return db.query(ip, ModeDomain) }
 
-// get time zone
-func (db *DB) GetTimezone(ip string) (*Record, error) { return db.query(ip, timezone) }
+// GetZipcode returns zip code
+func (db *DB) GetZipcode(ip string) (*Record, error) { return db.query(ip, ModeZipCode) }
 
-// get net speed
-func (db *DB) GetNetSpeed(ip string) (*Record, error) { return db.query(ip, netspeed) }
+// GetTimezone returns time zone
+func (db *DB) GetTimezone(ip string) (*Record, error) { return db.query(ip, ModeTimeZone) }
 
-// get idd code
-func (db *DB) GetIddCode(ip string) (*Record, error) { return db.query(ip, iddcode) }
+// GetNetSpeed returns net speed
+func (db *DB) GetNetSpeed(ip string) (*Record, error) { return db.query(ip, ModeNetSpeed) }
 
-// get area code
-func (db *DB) GetAreaCode(ip string) (*Record, error) { return db.query(ip, areacode) }
+// GetIddCode returns idd code
+func (db *DB) GetIddCode(ip string) (*Record, error) { return db.query(ip, ModeIddCode) }
 
-// get weather station code
+// GetAreaCode returns area code
+func (db *DB) GetAreaCode(ip string) (*Record, error) { return db.query(ip, ModeAreaCode) }
+
+// GetWeatherStationCode returns weather station code
 func (db *DB) GetWeatherStationCode(ip string) (*Record, error) {
-	return db.query(ip, weatherstationcode)
+	return db.query(ip, ModeWeatherStationCode)
 }
 
-// get weather station name
+// GetWeatherStationName returns weather station name
 func (db *DB) GetWeatherStationName(ip string) (*Record, error) {
-	return db.query(ip, weatherstationname)
+	return db.query(ip, ModeWeatherStationName)
 }
 
-// get mobile country code
-func (db *DB) GetMobileCountryCode(ip string) (*Record, error) { return db.query(ip, mcc) }
+// GetMobileCountryCode returns mobile country code
+func (db *DB) GetMobileCountryCode(ip string) (*Record, error) {
+	return db.query(ip, ModeMobileCountryCode)
+}
 
-// get mobile network code
-func (db *DB) GetMobileNetworkCode(ip string) (*Record, error) { return db.query(ip, mnc) }
+// GetMobileNetworkCode returns mobile network code
+func (db *DB) GetMobileNetworkCode(ip string) (*Record, error) {
+	return db.query(ip, ModeMobileNetworkCode)
+}
 
-// get mobile carrier brand
-func (db *DB) GetMobileBrand(ip string) (*Record, error) { return db.query(ip, mobilebrand) }
+// GetMobileBrand returns mobile carrier brand
+func (db *DB) GetMobileBrand(ip string) (*Record, error) { return db.query(ip, ModeMobileBrand) }
 
-// get elevation
-func (db *DB) GetElevation(ip string) (*Record, error) { return db.query(ip, elevation) }
+// GetElevation returns elevation
+func (db *DB) GetElevation(ip string) (*Record, error) { return db.query(ip, ModeElevation) }
 
-// get usage type
-func (db *DB) GetUsageType(ip string) (*Record, error) { return db.query(ip, usagetype) }
+// GetUsageType returns usage type
+func (db *DB) GetUsageType(ip string) (*Record, error) { return db.query(ip, ModeUsageType) }
 
 // main query
 func (db *DB) query(ip string, mode uint32) (*Record, error) {
@@ -532,102 +561,102 @@ func (db *DB) query(ip string, mode uint32) (*Record, error) {
 				rowoffset = rowoffset + 12 // coz below is assuming all columns are 4 bytes, so got 12 left to go to make 16 bytes total
 			}
 
-			if mode&countryshort == 1 && db.countryEnabled {
+			if mode&ModeCountryShort == 1 && db.countryEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.countryPositionOffset)
 				x.CountryShort, _ = readstr(db.f, val)
 			}
 
-			if mode&countrylong != 0 && db.countryEnabled {
+			if mode&ModeCountryLong != 0 && db.countryEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.countryPositionOffset)
 				x.CountryLong, _ = readstr(db.f, val+3)
 			}
 
-			if mode&region != 0 && db.regionEnabled {
+			if mode&ModeRegion != 0 && db.regionEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.regionPositionOffset)
 				x.Region, _ = readstr(db.f, val)
 			}
 
-			if mode&city != 0 && db.cityEnabled {
+			if mode&ModeCity != 0 && db.cityEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.cityPositionOffset)
 				x.City, _ = readstr(db.f, val)
 			}
 
-			if mode&isp != 0 && db.ispEnabled {
+			if mode&ModeISP != 0 && db.ispEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.ispPositionOffset)
 				x.ISP, _ = readstr(db.f, val)
 			}
 
-			if mode&latitude != 0 && db.latitudeEnabled {
+			if mode&ModeLatitude != 0 && db.latitudeEnabled {
 				x.Latitude, _ = readfloat(db.f, rowoffset+db.latitudePositionOffset)
 			}
 
-			if mode&longitude != 0 && db.longitudeEnabled {
+			if mode&ModeLongitude != 0 && db.longitudeEnabled {
 				x.Longitude, _ = readfloat(db.f, rowoffset+db.longitudePositionOffset)
 			}
 
-			if mode&domain != 0 && db.domainEnabled {
+			if mode&ModeDomain != 0 && db.domainEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.domainPositionOffset)
 				x.Domain, _ = readstr(db.f, val)
 			}
 
-			if mode&zipcode != 0 && db.zipcodeEnabled {
+			if mode&ModeZipCode != 0 && db.zipcodeEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.zipcodePositionOffset)
 				x.ZipCode, _ = readstr(db.f, val)
 			}
 
-			if mode&timezone != 0 && db.timezoneEnabled {
+			if mode&ModeTimeZone != 0 && db.timezoneEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.timezonePositionOffset)
 				x.TimeZone, _ = readstr(db.f, val)
 			}
 
-			if mode&netspeed != 0 && db.netspeedEnabled {
+			if mode&ModeNetSpeed != 0 && db.netspeedEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.netspeedPositionOffset)
 				x.NetSpeed, _ = readstr(db.f, val)
 			}
 
-			if mode&iddcode != 0 && db.iddcodeEnabled {
+			if mode&ModeIddCode != 0 && db.iddcodeEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.iddcodePositionOffset)
 				x.IddCode, _ = readstr(db.f, val)
 			}
 
-			if mode&areacode != 0 && db.areacodeEnabled {
+			if mode&ModeAreaCode != 0 && db.areacodeEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.areacodePositionOffset)
 				x.AreaCode, _ = readstr(db.f, val)
 			}
 
-			if mode&weatherstationcode != 0 && db.weatherstationcodeEnabled {
+			if mode&ModeWeatherStationCode != 0 && db.weatherstationcodeEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.weatherstationcodePositionOffset)
 				x.WeatherStationCode, _ = readstr(db.f, val)
 			}
 
-			if mode&weatherstationname != 0 && db.weatherstationnameEnabled {
+			if mode&ModeWeatherStationName != 0 && db.weatherstationnameEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.weatherstationnamePositionOffset)
 				x.WeatherStationName, _ = readstr(db.f, val)
 			}
 
-			if mode&mcc != 0 && db.mccEnabled {
+			if mode&ModeMobileCountryCode != 0 && db.mccEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.mccPositionOffset)
 				x.MobileCountryCode, _ = readstr(db.f, val)
 			}
 
-			if mode&mnc != 0 && db.mncEnabled {
+			if mode&ModeMobileNetworkCode != 0 && db.mncEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.mncPositionOffset)
 				x.MobileNetworkCode, _ = readstr(db.f, val)
 			}
 
-			if mode&mobilebrand != 0 && db.mobilebrandEnabled {
+			if mode&ModeMobileBrand != 0 && db.mobilebrandEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.mobilebrandPositionOffset)
 				x.MobileBrand, _ = readstr(db.f, val)
 			}
 
-			if mode&elevation != 0 && db.elevationEnabled {
+			if mode&ModeElevation != 0 && db.elevationEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.elevationPositionOffset)
 				vals, _ := readstr(db.f, val)
 				f, _ := strconv.ParseFloat(vals, 32)
 				x.Elevation = float32(f)
 			}
 
-			if mode&usagetype != 0 && db.usagetypeEnabled {
+			if mode&ModeUsageType != 0 && db.usagetypeEnabled {
 				val, _ := readuint32(db.f, rowoffset+db.usagetypePositionOffset)
 				x.UsageType, _ = readstr(db.f, val)
 			}
