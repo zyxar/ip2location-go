@@ -10,22 +10,6 @@ import (
 	"strconv"
 )
 
-type ip2locationmeta struct {
-	databasetype      uint8
-	databasecolumn    uint8
-	databaseday       uint8
-	databasemonth     uint8
-	databaseyear      uint8
-	ipv4databasecount uint32
-	ipv4databaseaddr  uint32
-	ipv6databasecount uint32
-	ipv6databaseaddr  uint32
-	ipv4indexbaseaddr uint32
-	ipv6indexbaseaddr uint32
-	ipv4columnsize    uint32
-	ipv6columnsize    uint32
-}
-
 type Record struct {
 	CountryShort       string
 	CountryLong        string
@@ -49,83 +33,89 @@ type Record struct {
 	UsageType          string
 }
 
-var country_position = [25]uint8{0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}
-var region_position = [25]uint8{0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3}
-var city_position = [25]uint8{0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4}
-var isp_position = [25]uint8{0, 0, 3, 0, 5, 0, 7, 5, 7, 0, 8, 0, 9, 0, 9, 0, 9, 0, 9, 7, 9, 0, 9, 7, 9}
-var latitude_position = [25]uint8{0, 0, 0, 0, 0, 5, 5, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5}
-var longitude_position = [25]uint8{0, 0, 0, 0, 0, 6, 6, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6}
-var domain_position = [25]uint8{0, 0, 0, 0, 0, 0, 0, 6, 8, 0, 9, 0, 10, 0, 10, 0, 10, 0, 10, 8, 10, 0, 10, 8, 10}
-var zipcode_position = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 0, 7, 7, 7, 0, 7, 0, 7, 7, 7, 0, 7}
-var timezone_position = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 7, 8, 8, 8, 7, 8, 0, 8, 8, 8, 0, 8}
-var netspeed_position = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 11, 0, 11, 8, 11, 0, 11, 0, 11, 0, 11}
-var iddcode_position = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 12, 0, 12, 0, 12, 9, 12, 0, 12}
-var areacode_position = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 13, 0, 13, 0, 13, 10, 13, 0, 13}
-var weatherstationcode_position = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 14, 0, 14, 0, 14, 0, 14}
-var weatherstationname_position = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 15, 0, 15, 0, 15, 0, 15}
-var mcc_position = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 16, 0, 16, 9, 16}
-var mnc_position = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 17, 0, 17, 10, 17}
-var mobilebrand_position = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 18, 0, 18, 11, 18}
-var elevation_position = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 19, 0, 19}
-var usagetype_position = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 20}
-
-var maxIPV4Range = big.NewInt(4294967295)
-var maxIPV6Range = big.NewInt(0)
-
-const apiVersion string = "8.0.3"
-
-const countryshort uint32 = 0x00001
-const countrylong uint32 = 0x00002
-const region uint32 = 0x00004
-const city uint32 = 0x00008
-const isp uint32 = 0x00010
-const latitude uint32 = 0x00020
-const longitude uint32 = 0x00040
-const domain uint32 = 0x00080
-const zipcode uint32 = 0x00100
-const timezone uint32 = 0x00200
-const netspeed uint32 = 0x00400
-const iddcode uint32 = 0x00800
-const areacode uint32 = 0x01000
-const weatherstationcode uint32 = 0x02000
-const weatherstationname uint32 = 0x04000
-const mcc uint32 = 0x08000
-const mnc uint32 = 0x10000
-const mobilebrand uint32 = 0x20000
-const elevation uint32 = 0x40000
-const usagetype uint32 = 0x80000
-
-const all uint32 = countryshort | countrylong | region | city | isp | latitude | longitude | domain | zipcode | timezone | netspeed | iddcode | areacode | weatherstationcode | weatherstationname | mcc | mnc | mobilebrand | elevation | usagetype
+var (
+	countryPosition            = [25]uint8{0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}
+	regionPosition             = [25]uint8{0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3}
+	cityPosition               = [25]uint8{0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4}
+	ispPosition                = [25]uint8{0, 0, 3, 0, 5, 0, 7, 5, 7, 0, 8, 0, 9, 0, 9, 0, 9, 0, 9, 7, 9, 0, 9, 7, 9}
+	latitudePosition           = [25]uint8{0, 0, 0, 0, 0, 5, 5, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5}
+	longitudePosition          = [25]uint8{0, 0, 0, 0, 0, 6, 6, 0, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6}
+	domainPosition             = [25]uint8{0, 0, 0, 0, 0, 0, 0, 6, 8, 0, 9, 0, 10, 0, 10, 0, 10, 0, 10, 8, 10, 0, 10, 8, 10}
+	zipcodePosition            = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 0, 7, 7, 7, 0, 7, 0, 7, 7, 7, 0, 7}
+	timezonePosition           = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 7, 8, 8, 8, 7, 8, 0, 8, 8, 8, 0, 8}
+	netspeedPosition           = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 11, 0, 11, 8, 11, 0, 11, 0, 11, 0, 11}
+	iddcodePosition            = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 12, 0, 12, 0, 12, 9, 12, 0, 12}
+	areacodePosition           = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 13, 0, 13, 0, 13, 10, 13, 0, 13}
+	weatherstationcodePosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 14, 0, 14, 0, 14, 0, 14}
+	weatherstationnamePosition = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 15, 0, 15, 0, 15, 0, 15}
+	mccPosition                = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 16, 0, 16, 9, 16}
+	mncPosition                = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 17, 0, 17, 10, 17}
+	mobilebrandPosition        = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 18, 0, 18, 11, 18}
+	elevationPosition          = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 19, 0, 19}
+	usagetypePosition          = [25]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 20}
+)
 
 var (
+	maxIPV4Range = big.NewInt(4294967295)
+	maxIPV6Range = big.NewInt(0)
+
 	ErrInvalidAddress = errors.New("Invalid IP address")
 	ErrInvalidFile    = errors.New("Invalid database file")
 	ErrNotSupported   = errors.New("Unsupported feature for selected data file")
+)
+
+const (
+	apiVersion string = "8.0.3"
+)
+
+const (
+	countryshort uint32 = 1 << iota
+	countrylong
+	region
+	city
+	isp
+	latitude
+	longitude
+	domain
+	zipcode
+	timezone
+	netspeed
+	iddcode
+	areacode
+	weatherstationcode
+	weatherstationname
+	mcc
+	mnc
+	mobilebrand
+	elevation
+	usagetype
+
+	all uint32 = countryshort | countrylong | region | city | isp | latitude | longitude | domain | zipcode | timezone | netspeed | iddcode | areacode | weatherstationcode | weatherstationname | mcc | mnc | mobilebrand | elevation | usagetype
 )
 
 type DB struct {
 	f    *os.File
 	meta ip2locationmeta
 
-	countryPositionOffset              uint32
-	region_position_offset             uint32
-	city_position_offset               uint32
-	isp_position_offset                uint32
-	domain_position_offset             uint32
-	zipcode_position_offset            uint32
-	latitude_position_offset           uint32
-	longitude_position_offset          uint32
-	timezone_position_offset           uint32
-	netspeed_position_offset           uint32
-	iddcode_position_offset            uint32
-	areacode_position_offset           uint32
-	weatherstationcode_position_offset uint32
-	weatherstationname_position_offset uint32
-	mcc_position_offset                uint32
-	mnc_position_offset                uint32
-	mobilebrand_position_offset        uint32
-	elevation_position_offset          uint32
-	usagetype_position_offset          uint32
+	countryPositionOffset            uint32
+	regionPositionOffset             uint32
+	cityPositionOffset               uint32
+	ispPositionOffset                uint32
+	domainPositionOffset             uint32
+	zipcodePositionOffset            uint32
+	latitudePositionOffset           uint32
+	longitudePositionOffset          uint32
+	timezonePositionOffset           uint32
+	netspeedPositionOffset           uint32
+	iddcodePositionOffset            uint32
+	areacodePositionOffset           uint32
+	weatherstationcodePositionOffset uint32
+	weatherstationnamePositionOffset uint32
+	mccPositionOffset                uint32
+	mncPositionOffset                uint32
+	mobilebrandPositionOffset        uint32
+	elevationPositionOffset          uint32
+	usagetypePositionOffset          uint32
 
 	countryEnabled            bool
 	regionEnabled             bool
@@ -326,80 +316,80 @@ func NewDB(dbpath string) (*DB, error) {
 	db := &DB{f: f, meta: meta}
 
 	// since both IPv4 and IPv6 use 4 bytes for the below columns, can just do it once here
-	if country_position[dbt] != 0 {
-		db.countryPositionOffset = uint32(country_position[dbt]-1) << 2
+	if countryPosition[dbt] != 0 {
+		db.countryPositionOffset = uint32(countryPosition[dbt]-1) << 2
 		db.countryEnabled = true
 	}
-	if region_position[dbt] != 0 {
-		db.region_position_offset = uint32(region_position[dbt]-1) << 2
+	if regionPosition[dbt] != 0 {
+		db.regionPositionOffset = uint32(regionPosition[dbt]-1) << 2
 		db.regionEnabled = true
 	}
-	if city_position[dbt] != 0 {
-		db.city_position_offset = uint32(city_position[dbt]-1) << 2
+	if cityPosition[dbt] != 0 {
+		db.cityPositionOffset = uint32(cityPosition[dbt]-1) << 2
 		db.cityEnabled = true
 	}
-	if isp_position[dbt] != 0 {
-		db.isp_position_offset = uint32(isp_position[dbt]-1) << 2
+	if ispPosition[dbt] != 0 {
+		db.ispPositionOffset = uint32(ispPosition[dbt]-1) << 2
 		db.ispEnabled = true
 	}
-	if domain_position[dbt] != 0 {
-		db.domain_position_offset = uint32(domain_position[dbt]-1) << 2
+	if domainPosition[dbt] != 0 {
+		db.domainPositionOffset = uint32(domainPosition[dbt]-1) << 2
 		db.domainEnabled = true
 	}
-	if zipcode_position[dbt] != 0 {
-		db.zipcode_position_offset = uint32(zipcode_position[dbt]-1) << 2
+	if zipcodePosition[dbt] != 0 {
+		db.zipcodePositionOffset = uint32(zipcodePosition[dbt]-1) << 2
 		db.zipcodeEnabled = true
 	}
-	if latitude_position[dbt] != 0 {
-		db.latitude_position_offset = uint32(latitude_position[dbt]-1) << 2
+	if latitudePosition[dbt] != 0 {
+		db.latitudePositionOffset = uint32(latitudePosition[dbt]-1) << 2
 		db.latitudeEnabled = true
 	}
-	if longitude_position[dbt] != 0 {
-		db.longitude_position_offset = uint32(longitude_position[dbt]-1) << 2
+	if longitudePosition[dbt] != 0 {
+		db.longitudePositionOffset = uint32(longitudePosition[dbt]-1) << 2
 		db.longitudeEnabled = true
 	}
-	if timezone_position[dbt] != 0 {
-		db.timezone_position_offset = uint32(timezone_position[dbt]-1) << 2
+	if timezonePosition[dbt] != 0 {
+		db.timezonePositionOffset = uint32(timezonePosition[dbt]-1) << 2
 		db.timezoneEnabled = true
 	}
-	if netspeed_position[dbt] != 0 {
-		db.netspeed_position_offset = uint32(netspeed_position[dbt]-1) << 2
+	if netspeedPosition[dbt] != 0 {
+		db.netspeedPositionOffset = uint32(netspeedPosition[dbt]-1) << 2
 		db.netspeedEnabled = true
 	}
-	if iddcode_position[dbt] != 0 {
-		db.iddcode_position_offset = uint32(iddcode_position[dbt]-1) << 2
+	if iddcodePosition[dbt] != 0 {
+		db.iddcodePositionOffset = uint32(iddcodePosition[dbt]-1) << 2
 		db.iddcodeEnabled = true
 	}
-	if areacode_position[dbt] != 0 {
-		db.areacode_position_offset = uint32(areacode_position[dbt]-1) << 2
+	if areacodePosition[dbt] != 0 {
+		db.areacodePositionOffset = uint32(areacodePosition[dbt]-1) << 2
 		db.areacodeEnabled = true
 	}
-	if weatherstationcode_position[dbt] != 0 {
-		db.weatherstationcode_position_offset = uint32(weatherstationcode_position[dbt]-1) << 2
+	if weatherstationcodePosition[dbt] != 0 {
+		db.weatherstationcodePositionOffset = uint32(weatherstationcodePosition[dbt]-1) << 2
 		db.weatherstationcodeEnabled = true
 	}
-	if weatherstationname_position[dbt] != 0 {
-		db.weatherstationname_position_offset = uint32(weatherstationname_position[dbt]-1) << 2
+	if weatherstationnamePosition[dbt] != 0 {
+		db.weatherstationnamePositionOffset = uint32(weatherstationnamePosition[dbt]-1) << 2
 		db.weatherstationnameEnabled = true
 	}
-	if mcc_position[dbt] != 0 {
-		db.mcc_position_offset = uint32(mcc_position[dbt]-1) << 2
+	if mccPosition[dbt] != 0 {
+		db.mccPositionOffset = uint32(mccPosition[dbt]-1) << 2
 		db.mccEnabled = true
 	}
-	if mnc_position[dbt] != 0 {
-		db.mnc_position_offset = uint32(mnc_position[dbt]-1) << 2
+	if mncPosition[dbt] != 0 {
+		db.mncPositionOffset = uint32(mncPosition[dbt]-1) << 2
 		db.mncEnabled = true
 	}
-	if mobilebrand_position[dbt] != 0 {
-		db.mobilebrand_position_offset = uint32(mobilebrand_position[dbt]-1) << 2
+	if mobilebrandPosition[dbt] != 0 {
+		db.mobilebrandPositionOffset = uint32(mobilebrandPosition[dbt]-1) << 2
 		db.mobilebrandEnabled = true
 	}
-	if elevation_position[dbt] != 0 {
-		db.elevation_position_offset = uint32(elevation_position[dbt]-1) << 2
+	if elevationPosition[dbt] != 0 {
+		db.elevationPositionOffset = uint32(elevationPosition[dbt]-1) << 2
 		db.elevationEnabled = true
 	}
-	if usagetype_position[dbt] != 0 {
-		db.usagetype_position_offset = uint32(usagetype_position[dbt]-1) << 2
+	if usagetypePosition[dbt] != 0 {
+		db.usagetypePositionOffset = uint32(usagetypePosition[dbt]-1) << 2
 		db.usagetypeEnabled = true
 	}
 
@@ -411,79 +401,49 @@ func APIVersion() string {
 	return apiVersion
 }
 
-func (db *DB) Close() error {
-	return db.f.Close()
-}
+func (db *DB) Close() error { return db.f.Close() }
 
 // get all fields
-func (db *DB) GetAll(ip string) (*Record, error) {
-	return db.query(ip, all)
-}
+func (db *DB) GetAll(ip string) (*Record, error) { return db.query(ip, all) }
 
 // get country code
-func (db *DB) GetCountryShort(ip string) (*Record, error) {
-	return db.query(ip, countryshort)
-}
+func (db *DB) GetCountryShort(ip string) (*Record, error) { return db.query(ip, countryshort) }
 
 // get country name
-func (db *DB) GetCountryLong(ip string) (*Record, error) {
-	return db.query(ip, countrylong)
-}
+func (db *DB) GetCountryLong(ip string) (*Record, error) { return db.query(ip, countrylong) }
 
 // get region
-func (db *DB) GetRegion(ip string) (*Record, error) {
-	return db.query(ip, region)
-}
+func (db *DB) GetRegion(ip string) (*Record, error) { return db.query(ip, region) }
 
 // get city
-func (db *DB) GetCity(ip string) (*Record, error) {
-	return db.query(ip, city)
-}
+func (db *DB) GetCity(ip string) (*Record, error) { return db.query(ip, city) }
 
 // get isp
-func (db *DB) GetIsp(ip string) (*Record, error) {
-	return db.query(ip, isp)
-}
+func (db *DB) GetIsp(ip string) (*Record, error) { return db.query(ip, isp) }
 
 // get latitude
-func (db *DB) GetLatitude(ip string) (*Record, error) {
-	return db.query(ip, latitude)
-}
+func (db *DB) GetLatitude(ip string) (*Record, error) { return db.query(ip, latitude) }
 
 // get longitude
-func (db *DB) GetLongitude(ip string) (*Record, error) {
-	return db.query(ip, longitude)
-}
+func (db *DB) GetLongitude(ip string) (*Record, error) { return db.query(ip, longitude) }
 
 // get domain
-func (db *DB) GetDomain(ip string) (*Record, error) {
-	return db.query(ip, domain)
-}
+func (db *DB) GetDomain(ip string) (*Record, error) { return db.query(ip, domain) }
 
 // get zip code
-func (db *DB) GetZipcode(ip string) (*Record, error) {
-	return db.query(ip, zipcode)
-}
+func (db *DB) GetZipcode(ip string) (*Record, error) { return db.query(ip, zipcode) }
 
 // get time zone
-func (db *DB) GetTimezone(ip string) (*Record, error) {
-	return db.query(ip, timezone)
-}
+func (db *DB) GetTimezone(ip string) (*Record, error) { return db.query(ip, timezone) }
 
 // get net speed
-func (db *DB) GetNetSpeed(ip string) (*Record, error) {
-	return db.query(ip, netspeed)
-}
+func (db *DB) GetNetSpeed(ip string) (*Record, error) { return db.query(ip, netspeed) }
 
 // get idd code
-func (db *DB) GetIddCode(ip string) (*Record, error) {
-	return db.query(ip, iddcode)
-}
+func (db *DB) GetIddCode(ip string) (*Record, error) { return db.query(ip, iddcode) }
 
 // get area code
-func (db *DB) GetAreaCode(ip string) (*Record, error) {
-	return db.query(ip, areacode)
-}
+func (db *DB) GetAreaCode(ip string) (*Record, error) { return db.query(ip, areacode) }
 
 // get weather station code
 func (db *DB) GetWeatherStationCode(ip string) (*Record, error) {
@@ -496,29 +456,19 @@ func (db *DB) GetWeatherStationName(ip string) (*Record, error) {
 }
 
 // get mobile country code
-func (db *DB) GetMobileCountryCode(ip string) (*Record, error) {
-	return db.query(ip, mcc)
-}
+func (db *DB) GetMobileCountryCode(ip string) (*Record, error) { return db.query(ip, mcc) }
 
 // get mobile network code
-func (db *DB) GetMobileNetworkCode(ip string) (*Record, error) {
-	return db.query(ip, mnc)
-}
+func (db *DB) GetMobileNetworkCode(ip string) (*Record, error) { return db.query(ip, mnc) }
 
 // get mobile carrier brand
-func (db *DB) GetMobileBrand(ip string) (*Record, error) {
-	return db.query(ip, mobilebrand)
-}
+func (db *DB) GetMobileBrand(ip string) (*Record, error) { return db.query(ip, mobilebrand) }
 
 // get elevation
-func (db *DB) GetElevation(ip string) (*Record, error) {
-	return db.query(ip, elevation)
-}
+func (db *DB) GetElevation(ip string) (*Record, error) { return db.query(ip, elevation) }
 
 // get usage type
-func (db *DB) GetUsageType(ip string) (*Record, error) {
-	return db.query(ip, usagetype)
-}
+func (db *DB) GetUsageType(ip string) (*Record, error) { return db.query(ip, usagetype) }
 
 // main query
 func (db *DB) query(ip string, mode uint32) (*Record, error) {
@@ -593,92 +543,92 @@ func (db *DB) query(ip string, mode uint32) (*Record, error) {
 			}
 
 			if mode&region != 0 && db.regionEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.region_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.regionPositionOffset)
 				x.Region, _ = readstr(db.f, val)
 			}
 
 			if mode&city != 0 && db.cityEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.city_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.cityPositionOffset)
 				x.City, _ = readstr(db.f, val)
 			}
 
 			if mode&isp != 0 && db.ispEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.isp_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.ispPositionOffset)
 				x.ISP, _ = readstr(db.f, val)
 			}
 
 			if mode&latitude != 0 && db.latitudeEnabled {
-				x.Latitude, _ = readfloat(db.f, rowoffset+db.latitude_position_offset)
+				x.Latitude, _ = readfloat(db.f, rowoffset+db.latitudePositionOffset)
 			}
 
 			if mode&longitude != 0 && db.longitudeEnabled {
-				x.Longitude, _ = readfloat(db.f, rowoffset+db.longitude_position_offset)
+				x.Longitude, _ = readfloat(db.f, rowoffset+db.longitudePositionOffset)
 			}
 
 			if mode&domain != 0 && db.domainEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.domain_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.domainPositionOffset)
 				x.Domain, _ = readstr(db.f, val)
 			}
 
 			if mode&zipcode != 0 && db.zipcodeEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.zipcode_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.zipcodePositionOffset)
 				x.ZipCode, _ = readstr(db.f, val)
 			}
 
 			if mode&timezone != 0 && db.timezoneEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.timezone_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.timezonePositionOffset)
 				x.TimeZone, _ = readstr(db.f, val)
 			}
 
 			if mode&netspeed != 0 && db.netspeedEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.netspeed_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.netspeedPositionOffset)
 				x.NetSpeed, _ = readstr(db.f, val)
 			}
 
 			if mode&iddcode != 0 && db.iddcodeEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.iddcode_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.iddcodePositionOffset)
 				x.IddCode, _ = readstr(db.f, val)
 			}
 
 			if mode&areacode != 0 && db.areacodeEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.areacode_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.areacodePositionOffset)
 				x.AreaCode, _ = readstr(db.f, val)
 			}
 
 			if mode&weatherstationcode != 0 && db.weatherstationcodeEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.weatherstationcode_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.weatherstationcodePositionOffset)
 				x.WeatherStationCode, _ = readstr(db.f, val)
 			}
 
 			if mode&weatherstationname != 0 && db.weatherstationnameEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.weatherstationname_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.weatherstationnamePositionOffset)
 				x.WeatherStationName, _ = readstr(db.f, val)
 			}
 
 			if mode&mcc != 0 && db.mccEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.mcc_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.mccPositionOffset)
 				x.MobileCountryCode, _ = readstr(db.f, val)
 			}
 
 			if mode&mnc != 0 && db.mncEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.mnc_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.mncPositionOffset)
 				x.MobileNetworkCode, _ = readstr(db.f, val)
 			}
 
 			if mode&mobilebrand != 0 && db.mobilebrandEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.mobilebrand_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.mobilebrandPositionOffset)
 				x.MobileBrand, _ = readstr(db.f, val)
 			}
 
 			if mode&elevation != 0 && db.elevationEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.elevation_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.elevationPositionOffset)
 				vals, _ := readstr(db.f, val)
 				f, _ := strconv.ParseFloat(vals, 32)
 				x.Elevation = float32(f)
 			}
 
 			if mode&usagetype != 0 && db.usagetypeEnabled {
-				val, _ := readuint32(db.f, rowoffset+db.usagetype_position_offset)
+				val, _ := readuint32(db.f, rowoffset+db.usagetypePositionOffset)
 				x.UsageType, _ = readstr(db.f, val)
 			}
 
@@ -692,4 +642,20 @@ func (db *DB) query(ip string, mode uint32) (*Record, error) {
 		}
 	}
 	return &x, nil
+}
+
+type ip2locationmeta struct {
+	databasetype      uint8
+	databasecolumn    uint8
+	databaseday       uint8
+	databasemonth     uint8
+	databaseyear      uint8
+	ipv4databasecount uint32
+	ipv4databaseaddr  uint32
+	ipv6databasecount uint32
+	ipv6databaseaddr  uint32
+	ipv4indexbaseaddr uint32
+	ipv6indexbaseaddr uint32
+	ipv4columnsize    uint32
+	ipv6columnsize    uint32
 }
